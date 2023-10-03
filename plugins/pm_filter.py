@@ -26,6 +26,9 @@ from database.filters_mdb import (
     find_filter,
     get_filters,
 )
+from util.human_readable import humanbytes
+from urllib.parse import quote_plus
+from util.file_properties import get_name, get_hash, get_media_file_size
 from database.gfilters_mdb import (
     find_gfilter,
     get_gfilters,
@@ -76,8 +79,8 @@ async def pm_text(bot, message):
     if content.startswith("/") or content.startswith("#"): return  # ignore commands and hashtags
     if user_id in ADMINS: return # ignore admins
     await message.reply_text(
-         text=f"<b>ʜᴇʏ {user} 😍 ,\n\nʏᴏᴜ ᴄᴀɴ'ᴛ ɢᴇᴛ ᴍᴏᴠɪᴇs ꜰʀᴏᴍ ʜᴇʀᴇ. ʀᴇǫᴜᴇsᴛ ɪᴛ ɪɴ ᴏᴜʀ <a href=https://t.me/Mix_Cinema_Box>ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ</a> ᴏʀ ᴄʟɪᴄᴋ ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ 👇</b>",   
-         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📝 ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ", url=f"https://t.me/Mix_Cinema_Box")]])
+         text=f"<b>ʜᴇʏ {user} 😍 ,\n\nʏᴏᴜ ᴄᴀɴ'ᴛ ɢᴇᴛ ᴍᴏᴠɪᴇs ꜰʀᴏᴍ ʜᴇʀᴇ. ʀᴇǫᴜᴇsᴛ ɪᴛ ɪɴ ᴏᴜʀ <a href=https://t.me/apnamovie4>ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ</a> ᴏʀ ᴄʟɪᴄᴋ ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ 👇</b>",   
+         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📝 ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ", url="t.me/apnamovie4")]])
     )
     await bot.send_message(
         chat_id=LOG_CHANNEL,
@@ -1009,7 +1012,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                   InlineKeyboardButton('🫨ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ', url=SUPPORT_CHAT),
                   InlineKeyboardButton('Uᴘᴅᴀᴛᴇs Cʜᴀɴɴᴇʟ', url=CHNL_LNK)
                 ],[
-                  InlineKeyboardButton("😇ᴍᴏᴠɪᴇ ʀᴇQᴜᴇꜱᴛ ɢʀᴏᴜᴘ😇", url="https://t.me/Mix_Cinema_Box")
+                  InlineKeyboardButton('𝖥𝖺𝗌𝗍 𝖣𝗈𝗐𝗇𝗅𝗈𝖺𝖽 📥 | 𝖮𝗇𝗅𝗂𝗇𝖾 𝖯𝗅𝖺𝗒 ▶️', callback_data=f'generate_stream_link:{file_id}')
                  ]
                 ]
             )
@@ -1534,6 +1537,43 @@ async def cb_handler(client: Client, query: CallbackQuery):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )
+    elif query.data.startswith("generate_stream_link"):
+        _, file_id = query.data.split(":")
+        try:
+            user_id = query.from_user.id
+            username =  query.from_user.mention 
+
+            log_msg = await client.send_cached_media(
+                chat_id=LOG_CHANNEL,
+                file_id=file_id,
+            )
+            fileName = {quote_plus(get_name(log_msg))}
+            lazy_stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+            lazy_download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+
+            xo = await query.message.reply_text(f'🔐')
+            await asyncio.sleep(1)
+            await xo.delete()
+
+            await log_msg.reply_text(
+                text=f"•• ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ꜰᴏʀ ɪᴅ #{user_id} \n•• ᴜꜱᴇʀɴᴀᴍᴇ : {username} \n\n📁 File Name : {fileName}",
+                quote=True,
+                disable_web_page_preview=True,
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Fᴀꜱᴛ Dᴏᴡɴʟᴏᴀᴅ 📥", url=lazy_download),  # we download Link
+                                                    InlineKeyboardButton('Oɴʟɪɴᴇ Sᴛʀᴇᴀᴍ ▶️', url=lazy_stream)]])  # web stream Link
+            )
+            await query.message.reply_photo(
+                photo=('https://graph.org/file/8fffa25a983f787b808e1.jpg'), caption=('════════※ ·❆· ※════════\n  𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗜𝗻 𝗔𝗹𝗹 𝗕𝗿𝗼𝘄𝘀𝗲𝗿𝘀\n           𝗣𝗹𝗮𝘆 𝗔𝗽𝗽𝘀\n\n  ‣ 𝘔𝘹 𝘗𝘭𝘢𝘺𝘦𝘳   ‣ 𝘗𝘭𝘢𝘺-𝘪𝘵\n\n  ‣ 𝘝𝘓𝘊 𝘗𝘭𝘢𝘺𝘦𝘳  ‣ 𝘚 𝘗𝘭𝘢𝘺𝘦𝘳\n\n  ‣ 𝘒𝘔 𝘗𝘭𝘢𝘺𝘦𝘳  ‣ 𝘝𝘪𝘥𝘦𝘰 𝘗𝘭𝘢𝘺𝘦𝘳'),
+                quote=True,
+#                disable_web_page_preview=True,
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Fᴀꜱᴛ Dᴏᴡɴʟᴏᴀᴅ 📥", url=lazy_download),  # we download Link
+                                                    InlineKeyboardButton('Oɴʟɪɴᴇ Sᴛʀᴇᴀᴍ ▶️', url=lazy_stream)]]),  # web stream Link
+            )
+        except Exception as e:
+            print(e)  # print the error message
+            await query.answer(f"something went wrong \n\n{e}", show_alert=True)
+            return
+
     elif query.data == "coct":
         buttons = [[
             InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
